@@ -9,6 +9,7 @@ from models import Trial
 from tracker import Tracker
 from EyeTracking import EyeTracker
 from psychopy import visual, logging, core, monitors, event
+import argparse
 
 # load experiment parameters
 with open('parameters.json', 'r') as openfile:
@@ -18,8 +19,44 @@ with open('parameters.json', 'r') as openfile:
 (l_num, l_dimensions, l_dist, configurations, square_size,
 test_speeds, ref_speed, num_blocks, num_reps, trial_duration, pause_time,
 num_practice_runs, window_size, viewing_distance, monitor_width, 
-monitor_resolution, participant_name, switch_percentage,
-switch_duration, num_switch_practice_runs, folder_name) = utilities.error_handling(exp_params)
+monitor_resolution, folder_name, screen_index) = utilities.error_handling(exp_params)
+
+###### CLI ARGUMENTS ######
+
+parser = argparse.ArgumentParser(
+    description="Run experiment"
+)
+
+parser.add_argument(
+    "--participant",
+    type=str,
+    required=True,
+    help="Participant ID"
+)
+
+parser.add_argument(
+    "--mode",
+    type=str,
+    required=True,
+    choices=["test", "eyetracker"],
+    help="Experiment mode (test/eyetracker)"
+)
+
+args = parser.parse_args()
+
+participant_id, mode = args.participant, args.mode
+
+
+track = None
+if mode == "eyetracker":
+    track = True
+else:
+    track = False
+
+print(f"Starting experiment for participant {participant_id}. Eyetracking on: {track}")
+print(f"Results will be stored in {folder_name} directory.\n")
+
+###########################
 
 ##############################################################################################
 ###### CREATE LIST OF TRIALS ######
@@ -45,71 +82,82 @@ my_monitor.setSizePix(monitor_resolution)  # Set monitor resolution if known
 # window_dimensions, full = display_utilities.create_window(window_size, monitor_resolution)
 
 # Initialize display object (window is initialized as attribute)
-display = Display(my_monitor, monitor_width, monitor_resolution, viewing_distance, window_size)
+display = Display(my_monitor,
+                  monitor_width,
+                  monitor_resolution,
+                  viewing_distance,
+                  window_size,
+                  screen_index=screen_index)
 
-# ##############################################################################################
-# ###### INTRO TEXT AND PRACTICE TRIALS ######
+# # ##############################################################################################
+# # ###### INTRO TEXT AND PRACTICE TRIALS ######
 
-# Create tracker object
-# tracker = Tracker("mouse", display)
-tracker = EyeTracker(
-    tracker="livetrack", 
-    trackEyes=[True, True],
-    fixationWindow=2.0,
-    minFixDur=0.5,
-    fixTimeout=5.0,
-    psychopyWindow=display.win, 
-    filefolder="dummyfolder", 
-    filename="dummy",
-    samplemode="average",
-    calibrationpoints=5,
-    fixationStimuli=display.square
-)
+# CREATE TRACKER OBJECT 
+if track:
+    tracker = EyeTracker(
+        tracker="livetrack", 
+        trackEyes=[True, True],
+        fixationWindow=2.0,
+        minFixDur=0.5,
+        fixTimeout=5.0,
+        psychopyWindow=display.win, 
+        filefolder="dummyfolder", 
+        filename="dummy",
+        samplemode="average",
+        calibrationpoints=5,
+        fixationStimuli=display.square
+    )
 
+    # Initialize tracker and pop up video
+    tracker.initialize()
 
-# Initialize tracker and pop up video
-tracker.initialize()
+    # Calibration text
+    calibration_text = [f"Welcome to the experiment! We will begin by calibrating our eye tracker. The process is simple: \
+    you will be presented with {tracker.calibrationpoints} stimuli at varying positions on the screen. The goal is for you \
+    to keep your head as still as possible, while following the simuli on the screen with your eyes only. \
+    NOTE: IF YOU MOVE AFTER CALIBRATION, WE WILL NEED TO RECALIBRATE. \
+    By pressing any key, you will begin the calibration process. Enjoy!"
+    ]
 
-# Calibration text
-calibration_text = [f"Welcome to the experiment! We will begin by calibrating our eye tracker. The process is simple: \
-you will be presented with {tracker.calibrationpoints} stimuli at varying positions on the screen. The goal is for you \
-to keep your head as still as possible, while following the simuli on the screen with your eyes only. By pressing any key, \
-you will begin the calibration process. Enjoy!"
-]
+    # Display calibration text
+    display.display_text_slides(calibration_text)
 
-# Display calibration text
-display.display_text_slides(calibration_text)
-
-# Start collecting and calibrate
-tracker.openfile()
-tracker.startcollecting()
-tracker.calibrate()
+    # Start collecting and calibrate
+    tracker.openfile()
+    tracker.startcollecting()
+    tracker.calibrate()
+else: 
+    tracker = None
 
 # Intro text
-intro_text = ["Well done! We will begin by introducing the experiment, \
-and what you are required to do. Press any key to continue.",
-    "Instructions are simple. You will be required to focus your eyes on a square-shaped fixation spot \
-located in the centre of the screen. The screen will be divided down the middle by a solid black line, \
-and on either side of the screen you will see 4 pairs of Ls that are rotating. Press any key to continue.",
-    f"The idea is that, while keeping your eyes on the square-shaped fixation spot, you pay attention to the \
-Ls on the left and right side of the screen. The Ls will appear for a duration of {trial_duration}s  \
-and then disappear. Once they have disappeared, you are asked to make a decision about which side of the screen the Ls \
-were moving faster, using the 'right' and 'left' arrow keys. This makes up a single trial. Press any key to continue.",
-    f"Let's try {num_practice_runs} practice trials. Throughout these trials, you will \
-select whether you think the Ls on the left or the right side of the screen moved faster. \
-Remember: focus on the fixation spot, and once the Ls disappear, make your choice using \
-the 'left' or 'right' arrow key. After this, the next trial will begin. Please note that the trials \
-will not begin unless your vision is fixated on the square. Ready? Press \
-any key to begin your practice trials."]
+intro_text = ["We will begin by introducing the experiment and the task.\n\
+Press any key to continue.",
+    "Maintain focus on the square-shaped fixation spot in the centre of the screen.\n\
+The screen will be divided in half by a solid black line.\n\
+Stimuli will be rotating on either side of the black line.",
+    f"TASK:\n\
+Stimuli will rotate for {trial_duration}s then disappear.\n\
+During this time, you CANNOT blink OR MOVE YOUR EYES.\n\
+Press any key to continue.",
+    "Once the stimuli have disappeared, you CAN blink.\n\
+To proceed, choose whether the SPEED of rotation was the SAME or DIFFERENT.\n\
+LEFT ARROW KEY = SAME SPEED\n\
+RIGHT ARROW KEY = DIFFERENT SPEED\n\
+Press any key to continue.",
+    f"Let's try {num_practice_runs} practice trials.\n\
+Remember: You will make your decision AFTER the stimuli have disappeared from the screen.\n\
+Remember: YOU CANNOT BLINK WHILE THE STIMULI ARE ROTATING.\n\
+Press any key to begin your practice trials."]
 
 # Display intro text
 display.display_text_slides(intro_text)
 
-# Ensure wait for participant to obtain fixation
-tracker.waitForFixation()
+if tracker:
+    # Ensure wait for participant to obtain fixation
+    tracker.waitForFixation()
 
-# # Make sure participant presses centre square before experiment begins
-# tracker.touch_shape(display.square)
+    # Make sure participant presses centre square before experiment begins
+    tracker.touch_shape(display.square)
 
 # Display practice trials
 failure_count = 0
@@ -164,15 +212,17 @@ for i, block in enumerate(final_list):
     
     # Display text prior to block
     if i > 0:
-        # recalibrate for the upcoming block
-        tracker.recalibrate()
-        block_text = [f"You are now beginning block {i + 1}. Press any key to proceed."]
+        block_text = [f"You are now beginning block {i + 1}. Press any key to begin calibration."]
     else:
-        block_text = ["You are about to begin the first block. Press any key to begin."]
+        block_text = ["You are about to begin the first block. Press any key to begin calibration."]
     display.display_text_slides(block_text)
 
-    # Initialize attention on fixation
-    tracker.waitForFixation()
+    if tracker is not None:
+        # recalibrate for the upcoming block
+        tracker.recalibrate()
+
+        # Initialize attention on fixation
+        tracker.waitForFixation()
 
     # Initialize counters for block
     total_count = 0
@@ -262,7 +312,7 @@ display.display_text_slides(final_text)
 folder = f"{folder_name}"
 os.makedirs(folder, exist_ok=True)
 
-file_path = os.path.join(folder, f'output_{participant_name}.json')
+file_path = os.path.join(folder, f'output_{participant_id}.json')
 
 with open(file_path, 'w') as file:
     json.dump(results, file, indent=4)

@@ -1,0 +1,21 @@
+{
+    "test": "True",
+    "square dimensions": [2.0, 1.6],
+    "number of L pairs": 2,
+    "L size": [0.4, 0.4, 0.1],
+    "inter-L distance": 0.8,
+    "configurations": [["global", "local"], ["global", "global"]],
+    "test speeds": [17.3, 40.3, 46.1, 51.9, 57.6, 63.4, 69.2, 74.9, 98.0],
+    "standard speed": 57.6,
+    "trial duration": 1.5,
+    "number of blocks": 3,
+    "total reps": 12,
+    "time between trials": 0.5,
+    "number of practice runs": 10,
+    "window size": "full",
+    "viewing distance": 57.6,
+    "monitor width": 53.1,
+    "monitor resolution": [1920, 1080],
+    "screen index": 1,
+    "folder name": "results"
+}

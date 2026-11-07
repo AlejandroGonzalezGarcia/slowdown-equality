@@ -4,6 +4,7 @@ import numpy as np
 import json
 import time, math, os
 from models import Trial
+import argparse
 
 def rotate(origin, point, angle):
     """
@@ -163,9 +164,8 @@ length 2 for [width, height]"
             parameters['number of blocks'], parameters['total reps'], parameters['trial duration'],
             parameters['time between trials'], parameters['number of practice runs'],
             parameters['window size'], parameters['viewing distance'], parameters['monitor width'], 
-            parameters['monitor resolution'], parameters['participant name'], 
-            parameters["percentage of switch trials"], parameters["duration of fixation change"],
-            parameters["number of switch practice runs"], parameters["folder name"])
+            parameters['monitor resolution'], parameters["folder name"], parameters['screen index'])
+
 
 def get_trial_list(num_reps, num_blocks, test_speeds, configurations,
                    ref_speed, square_size, l_num):

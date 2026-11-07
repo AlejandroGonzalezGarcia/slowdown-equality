@@ -14,6 +14,7 @@ class Display:
                  screen_resolution,
                  viewing_distance,
                  window_size,
+                 screen_index,
                  line_width = 0.13,
                  square_coords = [(0.10, 0.10), (0.10, -0.10), (-0.10, -0.10), (-0.10, 0.10)]
                  ):
@@ -35,6 +36,7 @@ class Display:
         self.viewing_distance = viewing_distance
         self.line_width = line_width
         self.square_coords = square_coords
+        self.screen_index = screen_index
 
         # Initialize window
         # if window_size != "full":
@@ -57,7 +59,7 @@ class Display:
                 units = "deg",
                 fullscr=True,
                 monitor = self.monitor,
-                screen=1,
+                screen=self.screen_index,
                 color = [127,127,127],
                 colorSpace = 'rgb255'
         )
@@ -71,6 +73,7 @@ class Display:
             color = [127,127,127],
             colorSpace = 'rgb255'
         )
+        self.win.mouseVisible = False
 
         # Initialize middle line
         line_y = self.pixels_to_degrees(self.screen_resolution[1]) / 2
@@ -89,32 +92,6 @@ class Display:
                           fillColor='white',
                           closeShape=True)
         
-
-    # def create_window(self, window_size):
-    #     """
-    #     Defines window.
-
-    #     Parameters:
-    #     window_size ("full" OR [width, height]): Specifies whether the experiment
-    #                 will be fullscreen or in a window of specified dimensions in pixels.
-    #     monitor_resolution (int array of length 2): Monitor resolution in pixels
-    #                 in format [width, height]
-    #     """
-    #     if window_size != "full":
-    #         # size = window_size
-    #         full = False
-    #     else:
-    #         # size = self.screen_resolution
-    #         full = True
-    #     self.win = visual.Window(
-    #         size = window_size,
-    #         units = "deg",
-    #         fullscr=full,
-    #         monitor = self.monitor,
-    #         color = [127,127,127],
-    #         colorSpace = 'rgb255'
-    #     )
-    #     return self.win
 
     def pixels_to_degrees(self, pixels):
         """
@@ -207,24 +184,15 @@ class Display:
             if elapsed_time > duration:
                 TRIAL_DONE = True
 
-            # mouse_pos = mouse.getPos()
-            # if not square.contains(mouse_pos):
-            #     DEVIATION = True
-            #     return None, None, None, None, None, None, DEVIATION
-            # if deviation_from_shape(mouse, square):
-            # DEVIATION = True
-            # return None, None, None, None, None, None, DEVIATION
-            # if tracker.deviation_from_shape(self.square):
-            #     trial.deviation = True
-            #     return
-            
-            if not tracker.gazeInFixationWindow():
-                trial.deviation = True
-                return
+            if tracker is not None:
+                if not tracker.gazeInFixationWindow():
+                    trial.deviation = True
+                    return
 
             key = event.getKeys()
             if "q" in key or "escape" in key:
-                tracker.shutdown()
+                if tracker is not None:
+                    tracker.shutdown()
                 self.win.close()
                 core.quit()
         await_response = False
@@ -255,10 +223,10 @@ class Display:
         #     test_side = "left"
         # else:
         #     test_side = "right"
-        if trial.test_side == trial.participant_choice:
-            trial.answer = "correct"
-        elif trial.test_side != trial.participant_choice:
-            trial.answer = "incorrect"
+        if trial.participant_choice == "left":
+            trial.answer = "same"
+        elif trial.participant_choice == "right":
+            trial.answer = "different"
         core.wait(pause_time)
         # return participant_choice, test_side, test['speed'], answer, ref['orientation'], test['orientation'], DEVIATION
 
